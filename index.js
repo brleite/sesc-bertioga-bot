@@ -27,11 +27,15 @@ const passwordLogin = config.password;
   await page.exposeFunction("setFlagDisponiveis", utils.setFlagDisponiveis);
   await page.exposeFunction("setFlagEsgotados", utils.setFlagEsgotados);
   await page.exposeFunction("sendBotMessage", utils.sendBotMessage);
+  await page.exposeFunction("ehDisponiveis", utils.ehDisponiveis);
+  await page.exposeFunction("ehEsgotados", utils.ehEsgotados);
+  await page.exposeFunction("sleep", utils.sleep);
+  await page.exposeFunction("log", utils.log);
 
   // Mostra console para o evaluate
   page.on("console", (consoleObj) => {
     if (consoleObj.type() === "log") {
-      console.log(consoleObj.text());
+      utils.log(consoleObj.text());
     }
   });
 
@@ -56,7 +60,7 @@ const passwordLogin = config.password;
       page.waitForNavigation({ waitUntil: "networkidle0" }),
     ]);
 
-    console.log("waitForNavigation - urlReserva");
+    utils.log("waitForNavigation - urlReserva");
 
     const matriculaOutroEstadoDiv = await page.waitForSelector(
       "div[heading='Sou matriculado em outro Estado']"
@@ -70,7 +74,7 @@ const passwordLogin = config.password;
     await page.keyboard.press("Enter");
     await page.waitForNavigation({ waitUntil: "networkidle0" });
 
-    console.log("waitForNavigation - Matrícula outro estado");
+    utils.log("waitForNavigation - Matrícula outro estado");
 
     const mesesDisponiveisDiv = await page.waitForSelector("div[ui-view='periodos@hospedagem']");
     const mesesDisponiveis = await mesesDisponiveisDiv.$$("button");
@@ -81,40 +85,54 @@ const passwordLogin = config.password;
 	
     let i = 0;
     for (const mesDisponivel of mesesDisponiveis) {
-      // console.log(mesDisponivel);
-      console.log(
-        `Mês disponível: ${await (await mesDisponivel.getProperty("innerText")).jsonValue()}`
-      );
+      // utils.log(mesDisponivel);
+      utils.log(`Mês disponível: ${await (await mesDisponivel.getProperty("innerText")).jsonValue()}`);
 
       // const primeiroMesDisponivel = await mesesDisponiveisDiv.$("button");
       await mesDisponivel.focus();
       await page.keyboard.press("Enter");
       await page.waitForNavigation({ waitUntil: "networkidle0" });
 
-      console.log("waitForNavigation - Mes disponível");
+      utils.log("waitForNavigation - Mes disponível");
 
+      await page.waitForSelector("a[href='#/hospedagem/compra-direta/1']");
+      utils.log("Link de COMPRE AGORA carregado");
 
-      // const compreAgoraLink = await page.$("a[href='#/hospedagem/compra-direta/1']");
+      const compreAgoraLink = await page.$("a[href='#/hospedagem/compra-direta/1']");
+      compreAgoraLink.click();
+      utils.log("click");
+
+      await utils.sleep(5000);
+      const btnDisponiveis = await page.waitForSelector("button[ng-model='tipoPeriodo']");
+      if (btnDisponiveis) {
+        utils.log("Botão Disponíveis encontrado");
+      } else {
+        const mensagemTmp = "Erro ao carregar COMPRE AGORA"
+        utils.log(mensagemTmp);
+
+        throw new Error(mensagemTmp)
+      }
+
       /* const compreAgoraLink = await page.$('li[data-original-title="A distribuição.*"]');
 
-      console.log(compreAgoraLink);
+      utils.log(compreAgoraLink);
       if (i > 0) {
         await compreAgoraLink.click();
-        console.log("click");
+        utils.log("click");
         await page.keyboard.press("Enter");
-        console.log("enter");
+        utils.log("enter");
         await page.waitForNavigation({ waitUntil: "networkidle0" });
       } */
       i++;
 
       // const compreAgoraLink = await page.waitForSelector("a[href='#/hospedagem/compra-direta/1']");
-      // console.log(compreAgoraLink);
+      // utils.log(compreAgoraLink);
       // await compreAgoraLink.click({ delay: 250 });
       // compreAgoraLink.focus();
       // await page.keyboard.press("Enter");
       // await page.waitForNavigation({ waitUntil: "networkidle0" });
 
-      console.log("waitForNavigation - Compre Agora");
+      utils.log("waitForNavigation - Compre Agora");
       // await page.waitForNavigation({ waitUntil: "networkidle0" });
 
       const disponiveisDiv = await page.waitForSelector("#container-sorteio");
@@ -122,101 +140,104 @@ const passwordLogin = config.password;
 
       await page.evaluate((p) => {
         const btnList = p.querySelectorAll("button");
+        log(btnList);
 
-        if (btnList.length !== 2) {
-          console.log("Erro: Botões não encontrados");
+        if (!btnList || btnList.length === 0) {
+          log("Erro: Botões não encontrados");
         } else {
-          btnList[0].addEventListener(
-            "DOMCharacterDataModified",
-            async () => {
-              console.log(btnList[0].innerText);
-
-              const flag = await getFlagDisponiveis();
-              if (await existemDisponiveis(btnList[0].innerText)) {
-                if (!flag) {
-                  await setFlagDisponiveis(true);
-
-                  await sendBotMessage(
-                    `Existem vagas DISPONÍVEIS no SESC Bertioga: ${btnList[0].innerText}`
-                  );
-
-                  console.log(
-                    `Existem vagas DISPONÍVEIS no SESC Bertioga: ${btnList[0].innerText}`
-                  );
-                }
-              }
-            },
-            false
-          );
-
-          btnList[1].addEventListener(
-            "DOMCharacterDataModified",
-            async () => {
-              console.log(btnList[1].innerText);
-
-              const flag = await getFlagEsgotados();
-              if (await existemEsgotados(btnList[1].innerText)) {
-                if (!flag) {
-                  await setFlagEsgotados(true);
-
-                  /*
-                  await sendBotMessage(
-                    `Existem vagas ESGOTADAS no SESC Bertioga: ${btnList[1].innerText}`
-                  );
-
-                  console.log(`Existem vagas ESGOTADAS no SESC Bertioga: ${btnList[1].innerText}`);
-                   */
-                }
-              }
-            },
-            false
-          );
+          for (let j = 0; j < btnList.length; ++j) {
+            const btn = btnList[j];
+            const btnStr = btn.innerText;
+  
+            if (ehDisponiveis(btnStr)) {
+              btn.addEventListener(
+                "DOMCharacterDataModified",
+                async () => {
+                  log('Disponíveis - Evento DOMCharacterDataModified');
+                  log(btnStr);
+    
+                  const flag = await getFlagDisponiveis();
+                  if (await existemDisponiveis(btnStr)) {
+                    if (!flag) {
+                      await setFlagDisponiveis(true);
+  
+                      const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga: ${btnStr}`;
+    
+                      await sendBotMessage(mensagemTmp);
+                      log(mensagemTmp);
+                    }
+                  }
+                },
+                false
+              );
+            } else if (ehEsgotados(btnStr)) {
+              btn.addEventListener(
+                "DOMCharacterDataModified",
+                async () => {
+                  log('Esgotados - Evento DOMCharacterDataModified');
+                  log(btnStr);
+    
+                  const flag = await getFlagEsgotados();
+                  if (await existemEsgotados(btnStr)) {
+                    if (!flag) {
+                      await setFlagEsgotados(true);
+    
+                      /*
+                      const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga: ${btnList[1].innerText}`;
+                      await sendBotMessage(mensagemTmp);
+    
+                      log(mensagemTmp);
+                       */
+                    }
+                  }
+                },
+                false
+              );
+            }
+          }
         }
       }, disponiveisDiv);
 
-      if (disponiveisEsgotados.length !== 2) {
-        console.log("Erro ao buscar disponíveis e esgotados");
+      if (!disponiveisEsgotados || disponiveisEsgotados.length === 0) {
+        utils.log("Erro ao buscar disponíveis e esgotados");
       } else {
-        // Disponíveis
-        const disponiveis = disponiveisEsgotados[0];
-        disponiveis.focus();
+        utils.log("Verificando botões DISPONÍVEIS e ESGOTADOS");
+        for (let k = 0; k < disponiveisEsgotados.length; ++k) {
+          const btn = disponiveisEsgotados[k];
+          const btnStr = await btn.evaluate((e) => e.innerText);
 
-        // console.log(await disponiveis.evaluate((e) => e));
+          utils.log(btnStr);
 
-        // const disponiveisStr = await (await disponiveis.getProperty("innerText")).jsonValue();
-        const disponiveisStr = await disponiveis.evaluate((e) => e.innerText);
+          btn.focus();
 
-        console.log(disponiveisStr);
+          if (utils.ehDisponiveis(btnStr)) {
+            if (utils.existemDisponiveis(btnStr)) {
+              utils.setFlagDisponiveis(true);
 
-        if (utils.existemDisponiveis(disponiveisStr)) {
-          utils.setFlagDisponiveis(true);
-          utils.sendBotMessage(`Existem vagas DISPONÍVEIS no SESC Bertioga: ${disponiveisStr}`);
+              const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga: ${disponiveisStr}`
+              utils.sendBotMessage(mensagemTmp);
+              utils.log(mensagemTmp);
+            }
+          } else if (utils.ehEsgotados(btnStr)) {
+            if (utils.existemEsgotados(esgotadosStr)) {
+              utils.setFlagEsgotados(true);
+
+              const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga: ${esgotadosStr}`
+              utils.sendBotMessage(mensagemTmp);
+              utils.log(mensagemTmp);
+            }
+          }
         }
-
-        // Esgotados
-        const esgotados = disponiveisEsgotados[1];
-        esgotados.focus();
-        // const esgotadosStr = await (await esgotados.getProperty("innerText")).jsonValue();
-        const esgotadosStr = await esgotados.evaluate((e) => e.innerText);
-
-        console.log(esgotadosStr);
-
-        /*
-        if (utils.existemEsgotados(esgotadosStr)) {
-          utils.setFlagEsgotados(true);
-          utils.sendBotMessage(`Existem vagas ESGOTADAS no SESC Bertioga: ${esgotadosStr}`);
-        }
-        */
       }
     }
 
     setTimeout(async () => {
       await browser.close();
 
-      console.log("Fim");
+      utils.log("Fim");
     }, 2000);
   } catch (e) {
-    console.log(e);
+    utils.log(e);
     await browser.close();
   }
 })();

@@ -95,6 +95,32 @@ function sendBotMessage(msg) {
   bot.sendMessage(CHATID, msg);
 }
 
+function ehDisponiveis(str) {
+  if (str.toUpperCase().includes("DISPONÍVEIS")) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function ehEsgotados(str) {
+  if (str.toUpperCase().includes("ESGOTADOS")) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function log(message) {
+  const d = new Date().toLocaleString();
+
+  console.log(`[${d}] ${message}`);
+}
+
 module.exports = {
   getFlagDisponiveis,
   getFlagEsgotados,
@@ -105,4 +131,8 @@ module.exports = {
   existemEsgotados,
   getEsgotados,
   sendBotMessage,
+  ehDisponiveis,
+  ehEsgotados,
+  sleep,
+  log
 };
