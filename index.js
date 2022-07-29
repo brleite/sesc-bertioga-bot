@@ -208,21 +208,21 @@ const passwordLogin = config.password;
 
           utils.log(btnStr);
 
-          btn.focus();
+          await btn.focus();
 
           if (utils.ehDisponiveis(btnStr)) {
             if (utils.existemDisponiveis(btnStr)) {
               utils.setFlagDisponiveis(true);
 
-              const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga: ${disponiveisStr}`
+              const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga: ${btnStr}`
               utils.sendBotMessage(mensagemTmp);
               utils.log(mensagemTmp);
             }
           } else if (utils.ehEsgotados(btnStr)) {
-            if (utils.existemEsgotados(esgotadosStr)) {
+            if (utils.existemEsgotados(btnStr)) {
               utils.setFlagEsgotados(true);
 
-              const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga: ${esgotadosStr}`
+              const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga: ${btnStr}`
               utils.sendBotMessage(mensagemTmp);
               utils.log(mensagemTmp);
             }
