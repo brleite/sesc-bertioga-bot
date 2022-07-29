@@ -1,6 +1,7 @@
 const puppeteer = require("puppeteer");
 const config = require("./config.json");
 const utils = require("./utils/utils");
+const fs = require('fs')
 
 const urlSescBertioga = "https://centrodeferias.sescsp.org.br/reserva.html";
 const urlReserva = "https://reservabertioga.sescsp.org.br/bertioga-web/";
@@ -8,6 +9,53 @@ const emailLogin = config.user;
 const passwordLogin = config.password;
 
 // utils.sendBotMessage("Iniciando Bot Bertioga");
+
+function checkStatusMesDisponivel(mesStr) {
+  try {
+    if (fs.existsSync(config.controlfilePath)) {
+      //file exists
+      fs.readFile(config.controlfilePath , 'utf8', function(err, data) {
+        if (err) throw err;
+        // console.log('OK: ' + config.controlfilePath);
+        // console.log(data)
+        
+        // TODO: retornar o valor contido no arquivo para a chave ifual ao mês informado.
+      });
+      
+      return 0;
+    } else {
+      return 0;
+    }
+  } catch(err) {
+    return 0;
+  }
+}
+
+function atualizaArquivoControle(mesStr, status) {
+  let conteudo = '';
+  if (fs.existsSync(config.controlfilePath)) {
+    fs.readFile(config.controlfilePath , 'utf8', function(err, data) {
+      if (err) throw err;
+      // TODO: Verificar se o arquivo já contém uma linha com o mês informado e atualizá-la
+    });
+
+  } else {
+    conteudo = mesStr + ": " + status;
+    fs.writeFile(config.controlfilePath, conteudo, (err) => {
+      if (err) throw err;
+    });
+
+  /*
+  if (err)
+    console.log(err);
+  else {
+    console.log("File written successfully\n");
+    console.log("The written has the following contents:");
+    console.log(fs.readFileSync("books.txt", "utf8"));
+  }
+  */
+  }
+}
 
 (async () => {
   const browser = await puppeteer.launch({
@@ -31,6 +79,8 @@ const passwordLogin = config.password;
   await page.exposeFunction("ehEsgotados", utils.ehEsgotados);
   await page.exposeFunction("sleep", utils.sleep);
   await page.exposeFunction("log", utils.log);
+  await page.exposeFunction("checkStatusMesDisponivel", checkStatusMesDisponivel);
+  await page.exposeFunction("atualizaArquivoControle", atualizaArquivoControle);
 
   // Mostra console para o evaluate
   page.on("console", (consoleObj) => {
@@ -164,10 +214,17 @@ const passwordLogin = config.password;
                       await setFlagDisponiveis(true);
   
                       const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga em ${mesStr}: ${btnStr}`;
-    
-                      await sendBotMessage(mensagemTmp);
+
+                      const statusMes = checkStatusMesDisponivel(mesDisponivelStr);
+                      if (statusMes == 0) {
+                        await sendBotMessage(mensagemTmp);
+                        atualizaArquivoControle(mesDisponivelStr, 1);
+                      }
+ 
                       log(mensagemTmp);
                     }
+                  } else {
+                    atualizaArquivoControle(mesDisponivelStr, 0);
                   }
                 },
                 false
@@ -217,16 +274,25 @@ const passwordLogin = config.password;
               utils.setFlagDisponiveis(true);
 
               const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga em ${mesDisponivelStr}: ${btnStr}`
-              utils.sendBotMessage(mensagemTmp);
+              const statusMes = checkStatusMesDisponivel(mesDisponivelStr);
+              if (statusMes == 0) {
+                utils.sendBotMessage(mensagemTmp);
+                atualizaArquivoControle(mesDisponivelStr, 1);
+              } 
+              
               utils.log(mensagemTmp);
+            } else {
+              // atualiza arquivo de controle
+              atualizaArquivoControle(mesDisponivelStr, 0);
             }
           } else if (utils.ehEsgotados(btnStr)) {
             if (utils.existemEsgotados(btnStr)) {
               utils.setFlagEsgotados(true);
-
+              /*
               const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga em ${mesDisponivelStr}: ${btnStr}`
               utils.sendBotMessage(mensagemTmp);
               utils.log(mensagemTmp);
+              */
             }
           }
         }
