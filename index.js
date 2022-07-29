@@ -85,8 +85,10 @@ const passwordLogin = config.password;
 	
     let i = 0;
     for (const mesDisponivel of mesesDisponiveis) {
+      const mesDisponivelStr = await (await mesDisponivel.getProperty("innerText")).jsonValue();
+
       // utils.log(mesDisponivel);
-      utils.log(`Mês disponível: ${await (await mesDisponivel.getProperty("innerText")).jsonValue()}`);
+      utils.log(`Mês disponível: ${mesDisponivelStr}`);
 
       // const primeiroMesDisponivel = await mesesDisponiveisDiv.$("button");
       await mesDisponivel.focus();
@@ -138,7 +140,7 @@ const passwordLogin = config.password;
       const disponiveisDiv = await page.waitForSelector("#container-sorteio");
       const disponiveisEsgotados = await disponiveisDiv.$$("button");
 
-      await page.evaluate((p) => {
+      await page.evaluate((p, mesStr) => {
         const btnList = p.querySelectorAll("button");
         log(btnList);
 
@@ -161,7 +163,7 @@ const passwordLogin = config.password;
                     if (!flag) {
                       await setFlagDisponiveis(true);
   
-                      const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga: ${btnStr}`;
+                      const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga em ${mesStr}: ${btnStr}`;
     
                       await sendBotMessage(mensagemTmp);
                       log(mensagemTmp);
@@ -183,7 +185,7 @@ const passwordLogin = config.password;
                       await setFlagEsgotados(true);
     
                       /*
-                      const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga: ${btnList[1].innerText}`;
+                      const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga em ${mesStr}: ${btnStr}`;
                       await sendBotMessage(mensagemTmp);
     
                       log(mensagemTmp);
@@ -196,7 +198,7 @@ const passwordLogin = config.password;
             }
           }
         }
-      }, disponiveisDiv);
+      }, disponiveisDiv, mesDisponivelStr);
 
       if (!disponiveisEsgotados || disponiveisEsgotados.length === 0) {
         utils.log("Erro ao buscar disponíveis e esgotados");
@@ -214,7 +216,7 @@ const passwordLogin = config.password;
             if (utils.existemDisponiveis(btnStr)) {
               utils.setFlagDisponiveis(true);
 
-              const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga: ${btnStr}`
+              const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga em ${mesDisponivelStr}: ${btnStr}`
               utils.sendBotMessage(mensagemTmp);
               utils.log(mensagemTmp);
             }
@@ -222,7 +224,7 @@ const passwordLogin = config.password;
             if (utils.existemEsgotados(btnStr)) {
               utils.setFlagEsgotados(true);
 
-              const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga: ${btnStr}`
+              const mensagemTmp = `Existem vagas ESGOTADAS no SESC Bertioga em ${mesDisponivelStr}: ${btnStr}`
               utils.sendBotMessage(mensagemTmp);
               utils.log(mensagemTmp);
             }
