@@ -7,6 +7,7 @@ const urlSescBertioga = "https://centrodeferias.sescsp.org.br/reserva.html";
 const urlReserva = "https://reservabertioga.sescsp.org.br/bertioga-web/";
 const emailLogin = config.user;
 const passwordLogin = config.password;
+const separador = '#'
 
 // utils.sendBotMessage("Iniciando Bot Bertioga");
 
@@ -15,7 +16,8 @@ function checkStatusMesDisponivel(mesStr) {
     if (fs.existsSync(config.controlfilePath)) {
       const data = fs.readFileSync(config.controlfilePath , 'utf8');
       /* utils.log(data) */
-      const linhas = data.split('\n');
+      /* const linhas = data.split(/\r?\n/); */
+      const linhas = data.split(separador);
       for (let l = 0; l < linhas.length; ++l) {
         /* utils.log("Linha " + l + ": " + linhas[l]); */
         const linhaTemp = linhas[l].split(':');
@@ -39,40 +41,40 @@ function checkStatusMesDisponivel(mesStr) {
 }
 
 function atualizaArquivoControle(mesStr, status) {
+
   let conteudo = '';
   if (fs.existsSync(config.controlfilePath)) {
     let novoConteudo = '';
     const data = fs.readFileSync(config.controlfilePath , 'utf8');
     /* utils.log(data) */
-    const linhas = data.split('\n');
+    let flag = false;
+    /* const linhas = data.split(/\r?\n/); */
+    const linhas = data.split(separador);
     for (let l = 0; l < linhas.length; ++l) {
+      if (linhas[l] === '') {
+        continue;
+      }
       /* utils.log("Linha " + l + ": " + linhas[l]); */
       const linhaTemp = linhas[l].split(':');
       if (linhaTemp[0].trim() === mesStr.trim()) {
-        novoConteudo += linhaTemp[0] + ': ' + status + '\n';
+        flag = true;
+        novoConteudo += linhaTemp[0] + ': ' + status + separador;
       } else {
-        novoConteudo += linhas[l];
+        novoConteudo += linhas[l] + separador ;
       }
+    }
+    if (!flag) {
+      novoConteudo += mesStr.trim() + ': ' + status + separador;
     }
 
     fs.writeFile(config.controlfilePath, novoConteudo, 'utf8', (err) => {
       if (err) throw err;
     });
   } else {
-    conteudo = mesStr + ": " + status;
+    conteudo = mesStr + ": " + status + separador;
     fs.writeFile(config.controlfilePath, conteudo, (err) => {
       if (err) throw err;
     });
-
-  /*
-  if (err)
-    console.log(err);
-  else {
-    console.log("File written successfully\n");
-    console.log("The written has the following contents:");
-    console.log(fs.readFileSync("books.txt", "utf8"));
-  }
-  */
   }
 }
 
