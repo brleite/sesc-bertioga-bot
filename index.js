@@ -13,17 +13,24 @@ const passwordLogin = config.password;
 function checkStatusMesDisponivel(mesStr) {
   try {
     if (fs.existsSync(config.controlfilePath)) {
-      //file exists
-      fs.readFile(config.controlfilePath , 'utf8', function(err, data) {
-        if (err) throw err;
-        // console.log('OK: ' + config.controlfilePath);
-        // console.log(data)
-        
-        // TODO: retornar o valor contido no arquivo para a chave ifual ao mês informado.
-      });
-      
+      const data = fs.readFileSync(config.controlfilePath , 'utf8');
+      /* utils.log(data) */
+      const linhas = data.split('\n');
+      for (let l = 0; l < linhas.length; ++l) {
+        /* utils.log("Linha " + l + ": " + linhas[l]); */
+        const linhaTemp = linhas[l].split(':');
+        if (linhaTemp[0].trim() === mesStr.trim()) {
+          const statusAnteriorTemp = parseInt(linhaTemp[1].trim(), 10)
+          /* utils.log('statusAnteriorTemp: ' + statusAnteriorTemp); */
+
+          return statusAnteriorTemp;
+        }
+      }
+
       return 0;
     } else {
+      utils.log('NOK: ' + config.controlfilePath)
+
       return 0;
     }
   } catch(err) {
@@ -34,11 +41,23 @@ function checkStatusMesDisponivel(mesStr) {
 function atualizaArquivoControle(mesStr, status) {
   let conteudo = '';
   if (fs.existsSync(config.controlfilePath)) {
-    fs.readFile(config.controlfilePath , 'utf8', function(err, data) {
-      if (err) throw err;
-      // TODO: Verificar se o arquivo já contém uma linha com o mês informado e atualizá-la
-    });
+    let novoConteudo = '';
+    const data = fs.readFileSync(config.controlfilePath , 'utf8');
+    /* utils.log(data) */
+    const linhas = data.split('\n');
+    for (let l = 0; l < linhas.length; ++l) {
+      /* utils.log("Linha " + l + ": " + linhas[l]); */
+      const linhaTemp = linhas[l].split(':');
+      if (linhaTemp[0].trim() === mesStr.trim()) {
+        novoConteudo += linhaTemp[0] + ': ' + status + '\n';
+      } else {
+        novoConteudo += linhas[l];
+      }
+    }
 
+    fs.writeFile(config.controlfilePath, novoConteudo, 'utf8', (err) => {
+      if (err) throw err;
+    });
   } else {
     conteudo = mesStr + ": " + status;
     fs.writeFile(config.controlfilePath, conteudo, (err) => {
@@ -217,7 +236,9 @@ function atualizaArquivoControle(mesStr, status) {
 
                       const statusMes = checkStatusMesDisponivel(mesDisponivelStr);
                       if (statusMes == 0) {
-                        await sendBotMessage(mensagemTmp);
+                        if (config.enviarTelegram === 'true') {
+                          await sendBotMessage(mensagemTmp);
+                        }
                         atualizaArquivoControle(mesDisponivelStr, 1);
                       }
  
@@ -276,7 +297,9 @@ function atualizaArquivoControle(mesStr, status) {
               const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga em ${mesDisponivelStr}: ${btnStr}`
               const statusMes = checkStatusMesDisponivel(mesDisponivelStr);
               if (statusMes == 0) {
-                utils.sendBotMessage(mensagemTmp);
+                if (config.enviarTelegram === 'true') {
+                  utils.sendBotMessage(mensagemTmp);
+                }
                 atualizaArquivoControle(mesDisponivelStr, 1);
               } 
               
