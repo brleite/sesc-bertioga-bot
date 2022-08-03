@@ -230,24 +230,34 @@ function atualizaArquivoControle(mesStr, status) {
                   log(btnStr);
     
                   const flag = await getFlagDisponiveis();
+                  const statusMes = checkStatusMesDisponivel(mesStr);
+
                   if (await existemDisponiveis(btnStr)) {
                     if (!flag) {
                       await setFlagDisponiveis(true);
   
                       const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga em ${mesStr}: ${btnStr}`;
 
-                      const statusMes = checkStatusMesDisponivel(mesDisponivelStr);
                       if (statusMes == 0) {
                         if (config.enviarTelegram === 'true') {
                           await sendBotMessage(mensagemTmp);
                         }
-                        atualizaArquivoControle(mesDisponivelStr, 1);
+                        atualizaArquivoControle(mesStr, 1);
                       }
  
                       log(mensagemTmp);
                     }
                   } else {
-                    atualizaArquivoControle(mesDisponivelStr, 0);
+                    const mensagemTmp = `Não existem mais vagas DISPONÍVEIS no SESC Bertioga em ${mesStr}: ${btnStr}`
+
+                    if (statusMes != 0) {
+                      if (config.enviarTelegram === 'true') {
+                        utils.sendBotMessage(mensagemTmp);
+                      }
+                      atualizaArquivoControle(mesStr, 0);
+                    }
+
+                    log(mensagemTmp);
                   }
                 },
                 false
@@ -293,22 +303,27 @@ function atualizaArquivoControle(mesStr, status) {
           await btn.focus();
 
           if (utils.ehDisponiveis(btnStr)) {
+            const statusMes = checkStatusMesDisponivel(mesDisponivelStr);
             if (utils.existemDisponiveis(btnStr)) {
               utils.setFlagDisponiveis(true);
 
               const mensagemTmp = `Existem vagas DISPONÍVEIS no SESC Bertioga em ${mesDisponivelStr}: ${btnStr}`
-              const statusMes = checkStatusMesDisponivel(mesDisponivelStr);
               if (statusMes == 0) {
                 if (config.enviarTelegram === 'true') {
                   utils.sendBotMessage(mensagemTmp);
                 }
                 atualizaArquivoControle(mesDisponivelStr, 1);
-              } 
-              
+              }               
               utils.log(mensagemTmp);
             } else {
-              // atualiza arquivo de controle
-              atualizaArquivoControle(mesDisponivelStr, 0);
+              const mensagemTmp = `Não existem mais vagas DISPONÍVEIS no SESC Bertioga em ${mesDisponivelStr}: ${btnStr}`
+              if (statusMes != 0) {
+                if (config.enviarTelegram === 'true') {
+                  utils.sendBotMessage(mensagemTmp);
+                }
+                atualizaArquivoControle(mesDisponivelStr, 0);
+              }
+              utils.log(mensagemTmp);
             }
           } else if (utils.ehEsgotados(btnStr)) {
             if (utils.existemEsgotados(btnStr)) {
