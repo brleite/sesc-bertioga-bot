@@ -81,7 +81,7 @@ function atualizaArquivoControle(mesStr, status) {
 (async () => {
   const browser = await puppeteer.launch({
     // executablePath: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    headless: true,
+    headless: config.headless,
     slowMo: 50, // slow down by ms
     // devtools: true,
   });
